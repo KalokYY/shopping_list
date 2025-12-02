@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shopping_list/data/categories.dart';
+import 'package:shopping_list/models/category.dart';
 
 class NewItem extends StatefulWidget {
   const NewItem({super.key});
@@ -11,6 +12,21 @@ class NewItem extends StatefulWidget {
 }
 
 class _NewItemState extends State<NewItem> {
+  final _formKey = GlobalKey<FormState>();
+  var _enteredName = '';
+  var _enteredQuantity = 1;
+  var _selectedCategory = categories[Categories.vegetables];
+ 
+ void _saveItem(){
+  if (_formKey.currentState!.validate()) 
+  {
+    _formKey.currentState!.save();
+    print(_enteredName); 
+    print(_enteredQuantity); 
+    print(_selectedCategory!.title);
+  }
+}
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -20,6 +36,7 @@ class _NewItemState extends State<NewItem> {
       body: Padding(
         padding: const EdgeInsets.all(12),
         child: Form(
+          key: _formKey,
           child: Column(
             children: [
               TextFormField(
@@ -35,6 +52,9 @@ class _NewItemState extends State<NewItem> {
                     return "Must have a name between 2 and 50 characters long!";
                   }
                   return null; 
+                },
+                onSaved: (value){
+                  _enteredName = value!; 
                 },
               ),
               Row(
@@ -55,6 +75,9 @@ class _NewItemState extends State<NewItem> {
                         }
                         return null; 
                       },
+                      onSaved: (value){
+                        _enteredQuantity = int.parse(value!); 
+                },
                     ),
                   ),
 
@@ -63,6 +86,7 @@ class _NewItemState extends State<NewItem> {
                   ),
                   Expanded( 
                     child: DropdownButtonFormField(
+                      initialValue: _selectedCategory,
                       items: [
                         for (final category in categories.entries)
                           DropdownMenuItem(
@@ -89,9 +113,11 @@ class _NewItemState extends State<NewItem> {
               ),
               const SizedBox(height: 12),
               Row(children: [
-                TextButton(onPressed: (){}, child: const Text("Reset"),
+                TextButton(onPressed: (){
+                  _formKey.currentState!.reset(); 
+                }, child: const Text("Reset"),
                   ),
-                ElevatedButton(onPressed: (){}, child: Text("Add Item"),
+                ElevatedButton(onPressed: _saveItem, child: Text("Add Item"),
                   ),
                 ],
               ),
