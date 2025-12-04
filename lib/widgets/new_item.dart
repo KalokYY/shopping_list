@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:shopping_list/data/categories.dart';
 import 'package:shopping_list/models/category.dart';
 import 'package:shopping_list/models/grocery_item.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert'; 
 
 class NewItem extends StatefulWidget {
   const NewItem({super.key});
-
   @override
   State<NewItem> createState() {
     return _NewItemState();
@@ -18,21 +19,36 @@ class _NewItemState extends State<NewItem> {
   var _enteredQuantity = 1;
   var _selectedCategory = categories[Categories.vegetables]!;
  
- void _saveItem(){
-  if (_formKey.currentState!.validate()) 
-  {
-    _formKey.currentState!.save();
-    
-    Navigator.of(context).pop(
-      GroceryItem(
-        id: DateTime.now().toString(), 
-        name: _enteredName, 
-        quantity: _enteredQuantity, 
-        category: _selectedCategory,
-      ),
-    );
+  void _saveItem() async { 
+    if (_formKey.currentState!.validate()) 
+    {
+      _formKey.currentState!.save();
+      //save this to database
+      final url = Uri.https(
+        'shopping-list-2f97f-default-rtdb.firebaseio.com', 
+        'shopping-list.json'
+      );
+      
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},  
+        body:json.encode({
+          'name': _enteredName,
+          'quantity': _enteredQuantity,
+          'category': _selectedCategory.title,
+        }),
+      );
+
+      print(response.body); 
+      print(response.statusCode); 
+
+      if(!context.mounted) {
+        return;
+      }
+
+      Navigator.of(context).pop();
+    }
   }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -124,7 +140,7 @@ class _NewItemState extends State<NewItem> {
                   _formKey.currentState!.reset(); 
                 }, child: const Text("Reset"),
                   ),
-                ElevatedButton(onPressed: _saveItem, child: Text("Add Item"),
+                ElevatedButton(onPressed: _saveItem, child: const Text("Add Item"),
                   ),
                 ],
               ),
