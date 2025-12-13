@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:shopping_list/data/dummy_items.dart';
+import 'package:shopping_list/data/categories.dart';
 import 'package:shopping_list/models/grocery_item.dart';
 import 'package:shopping_list/widgets/new_item.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert'; 
+
 
 class GroceryList extends StatefulWidget {
   const GroceryList({super.key});
@@ -11,41 +14,112 @@ class GroceryList extends StatefulWidget {
 }
 
 class _GroceryListState extends State<GroceryList> {
-  final List<GroceryItem> _groceryItems = []; 
-  void _addItem()  async {
-    final newItem = await Navigator.of(context).push(
+  var _isLoading = true; 
+  
+  List<GroceryItem> _groceryItems = []; 
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadItems();
+  }
+
+  void _loadItems() async {
+    final url = Uri.https(
+      'shopping-list-2f97f-default-rtdb.firebaseio.com',
+      'shopping-list.json',
+    );
+    
+    try {
+      final response = await http.get(url);
+      
+      if (response.body == 'null') {
+        setState(() {
+          _isLoading = false; 
+        });
+        return; 
+      }
+      
+      final Map<String, dynamic> listData = json.decode(
+        response.body,
+      );
+      
+      final List<GroceryItem> loadedItems = []; 
+      
+      for (final item in listData.entries) {
+        final currentCat = categories.entries.firstWhere(
+          (catItem) => catItem.value.title == item.value['category'],
+        ).value; 
+        
+        loadedItems.add(
+          GroceryItem(
+            id: item.key,
+            name: item.value['name'],
+            quantity: int.parse(item.value['quantity'].toString()), 
+            category: currentCat,
+          ),
+        );
+      }
+      
+      setState(() {
+        _groceryItems = loadedItems;
+        _isLoading = false;
+      });
+      
+    } catch (error) {
+      print('Failed to load items: $error');
+      setState(() {
+        _isLoading = false; 
+      });
+    }
+  }
+
+  void _addItem() async {
+    final newItem = await 
+    Navigator.of(context).push<GroceryItem>(
       MaterialPageRoute(
         builder: (ctx) => const NewItem(),
       ),
     );
+    
     if(newItem == null) {
       return;
     }
-    else{
-      setState(() {
-        _groceryItems.add(newItem);
-      });
-    }
+    
+    setState(() {
+      _groceryItems.add(newItem);
+    });
   }
   
-  void _removeItem(GroceryItem item) 
-  {
+  void _removeItem(GroceryItem item) async {
+    final index = _groceryItems.indexOf(item);
     setState(() {
       _groceryItems.remove(item);
     });
-
-  for (var i = 0; i< _groceryItems.length; i++)
+    final url = Uri.https(
+      'shopping-list-2f97f-default-rtdb.firebaseio.com',
+      'shopping-list/${item.id}.json',
+    );
+    var response  =  await http.delete(url);
+    if(response.statusCode >400)
     {
-      print(_groceryItems[i].name);
+      setState(() {
+        _groceryItems.insert(index, item);
+      });
     }
   }
-  
 
   @override
   Widget build(BuildContext context) {
     Widget content = const Center(child: Text("Please Click the + Button to add an Item"),
     );
-    if(_groceryItems.isNotEmpty)
+    
+    if (_isLoading)
+    {
+      content = const Center(child: CircularProgressIndicator());
+    }
+    
+    if(!_isLoading && _groceryItems.isNotEmpty)
     {
       content = ListView.builder(
         itemCount: _groceryItems.length,
@@ -58,14 +132,15 @@ class _GroceryListState extends State<GroceryList> {
             leading: Container(
             width: 24,
             height: 24,
-            color: groceryItems[index].category.color,
+            color: _groceryItems[index].category.color, 
           ),
-          title: Text(groceryItems[index].name),
-          trailing: Text(groceryItems[index].quantity.toString()),
+          title: Text(_groceryItems[index].name), 
+          trailing: Text(_groceryItems[index].quantity.toString()), 
         ),
         )
       );
     }
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text("Your Groceries"),
@@ -77,6 +152,6 @@ class _GroceryListState extends State<GroceryList> {
         ],
       ),
       body: content,
-        );
+    );
   }
 }
