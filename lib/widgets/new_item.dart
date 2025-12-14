@@ -26,17 +26,12 @@ class _NewItemState extends State<NewItem> {
     {
       _formKey.currentState!.save();
       
-      setState(() {
-        _isSending = true;
-      });
-      
-      final url = Uri.https(
+     final url = Uri.https(
         'shopping-list-2f97f-default-rtdb.firebaseio.com', 
         'shopping-list.json'
       );
-      
-      try {
-        final response = await http.post(
+     
+     final response = await http.post(
           url,
           headers: {'Content-Type': 'application/json'},
           body:json.encode({
@@ -45,35 +40,23 @@ class _NewItemState extends State<NewItem> {
             'category': _selectedCategory.title,
           }),
         );
-        
-        if (response.statusCode >= 400) {
-           setState(() {
-              _isSending = false; 
-           });
-           return;
-        }
 
-        final Map<String, dynamic> resData = json.decode(response.body);
+        final Map<String,dynamic> resData = json.decode(response.body,);
 
         if(!context.mounted)
-        {
+        { 
           return;
         }
-        
-        Navigator.of(context).pop(GroceryItem(
-          id: resData['name'], 
-          name: _enteredName, 
-          quantity: _enteredQuantity, 
-          category: _selectedCategory,
-        ));
-      } catch (error) {
-        setState(() {
-          _isSending = false; 
-        });
-        print('Error saving item: $error');
+        Navigator.of(context).pop(
+          GroceryItem(
+            id: resData['name'], 
+            name: _enteredName, 
+            quantity: _enteredQuantity, 
+            category: _selectedCategory
+          ),
+        );
       }
     }
-  }
   
 
   @override
