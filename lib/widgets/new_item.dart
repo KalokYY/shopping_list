@@ -25,6 +25,10 @@ class _NewItemState extends State<NewItem> {
     if (_formKey.currentState!.validate()) 
     {
       _formKey.currentState!.save();
+
+      setState(() {
+        _isSending = true;
+      });
       
      final url = Uri.https(
         'shopping-list-2f97f-default-rtdb.firebaseio.com', 
@@ -58,7 +62,6 @@ class _NewItemState extends State<NewItem> {
       }
     }
   
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -162,13 +165,13 @@ class _NewItemState extends State<NewItem> {
                   ),
                   ElevatedButton(
                     onPressed: _isSending ? null : _saveItem,
-                    child: _isSending
-                        ? SizedBox(
-                            height: 16,
-                            width: 16,
-                            child: CircularProgressIndicator(),
-                          )
-                        : Text("Add Item"),
+                    child: _isSending ? SizedBox
+                    (
+                      height: 16,
+                      width: 16,
+                      child: CircularProgressIndicator(),
+                    )
+                    : Text("Add Item"),
                   ),
                 ],
               ),
