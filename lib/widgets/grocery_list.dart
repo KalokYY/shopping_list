@@ -16,6 +16,7 @@ class GroceryList extends StatefulWidget {
 class _GroceryListState extends State<GroceryList> {
   List<GroceryItem> _groceryItems = []; 
   var _isLoading = true; 
+  String? _error = "";
 
   @override
   void initState() {
@@ -29,7 +30,12 @@ class _GroceryListState extends State<GroceryList> {
       'shopping-list.json',
     );
     final response = await http.get(url);
-    // print(response.body);
+    // print(response.statusCode);
+    if(response.statusCode > 400) {
+      setState(() {
+        _error = "Failed to fetch data. Try again later";
+      });
+    }
     final Map<String,dynamic> listData = json.decode(response.body,);
     final List<GroceryItem> loadedItems = []; 
     for (final item in listData.entries) 
@@ -79,15 +85,15 @@ class _GroceryListState extends State<GroceryList> {
       'shopping-list-2f97f-default-rtdb.firebaseio.com',
       'shopping-list/${item.id}.json',
     );
-    var response  =  await http.delete(url);
+    var response  = await http.delete(url);
     if(response.statusCode >400)
     {
       setState(() {
         _groceryItems.insert(index, item);
       });
-      for (var i = 0; i < _groceryItems.length; i++) {
-        print(_groceryItems[i].name);
-      }
+    // for (var i = 0; i < _groceryItems.length; i++) {
+    //   print(_groceryItems[i].name);
+    // }
     }
   }
 
@@ -96,12 +102,16 @@ class _GroceryListState extends State<GroceryList> {
     Widget content = const Center(
       child: Text("Please Click the + Button to add an Item"),
     );
-    
     if (_isLoading)
     {
       content = const Center(child: CircularProgressIndicator());
     }
-    
+    if(_error != null) 
+    {
+      content = Center(
+        child: Text(_error!),
+      );
+    }
     if(_groceryItems.isNotEmpty)
     {
       content = ListView.builder(
